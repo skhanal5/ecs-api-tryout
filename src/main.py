@@ -4,6 +4,7 @@ from api.routes import health
 
 
 app = FastAPI(
-    title="FastAPI Example",)
+    title="FastAPI Example",
+)
 
 app.include_router(health.router)

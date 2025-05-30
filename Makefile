@@ -1,5 +1,13 @@
 PHONY: install shell clean rund logs help
 
+lint:
+	@echo "Formatting code..."
+	pipenv run ruff check --fix .
+
+fmt:
+	@echo "Formatting code..."
+	pipenv run ruff format .
+
 install:
 	@echo "Installing dev dependencies..."
 	pipenv install --dev
