@@ -31,8 +31,6 @@ connection: close
 #### OpenAPI Documentation
 View all supported API endpoints by visiting the OpenAPI UI at http://localhost:8080/docs
 
-Example:
-![alt text](assets/image.png)
 
 #### Code Quality
 Use `pre-commit install` to set up the pre-commit hook which include `mypy` and `ruff` for you for static-type checking and linting & formatting respectively.
