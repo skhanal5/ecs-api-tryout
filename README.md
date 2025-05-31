@@ -1,4 +1,4 @@
-# fargate-api-tryout
+# ecs-api-tryout
 
 ### About
 This repo is a basic starter template for a REST API built using the FastAPI framework.
