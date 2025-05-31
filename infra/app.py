@@ -1,10 +1,9 @@
 import aws_cdk as cdk
 
-from cdk.stacks.service import ECSAPIStack
-
+import stacks.service as service
 
 app = cdk.App()
-ECSAPIStack(
+service.ECSAPIStack(
     app,
     "ECSAPIStack",
     env=cdk.Environment(account=cdk.Aws.ACCOUNT_ID, region=cdk.Aws.REGION),

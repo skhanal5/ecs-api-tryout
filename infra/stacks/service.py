@@ -1,8 +1,12 @@
 from aws_cdk import (
     aws_ec2 as ec2,
     aws_ecs as ecs,
+    aws_ecr_assets as ecr_assets,
+    aws_iam as iam,
     aws_elasticloadbalancingv2 as elbv2,
+    aws_autoscaling as autoscaling,
     Stack,
+    Duration,
     CfnOutput,
 )
 from constructs import Construct
@@ -15,7 +19,7 @@ class ECSAPIStack(Stack):
         vpc = ec2.Vpc(
             self,
             "VPC",
-            max_azs=1,
+            max_azs=2,
             subnet_configuration=[
                 ec2.SubnetConfiguration(
                     name="Public", subnet_type=ec2.SubnetType.PUBLIC, cidr_mask=24
@@ -42,13 +46,39 @@ class ECSAPIStack(Stack):
             description="Allow HTTP traffic",
         )
 
-        cluster = ecs.Cluster(self, "ECSCluster", vpc=vpc)
+        cluster = ecs.Cluster(self, "EcsCluster", vpc=vpc)
+        asg = autoscaling.AutoScalingGroup(
+            self,
+            "EcsAsg",
+            vpc=vpc,
+            launch_template=ec2.LaunchTemplate(
+                self,
+                "LaunchTemplate",
+                instance_type=ec2.InstanceType.of(
+                    ec2.InstanceClass.BURSTABLE3, ec2.InstanceSize.MICRO
+                ),
+                machine_image=ecs.EcsOptimizedImage.amazon_linux2023(),
+                user_data=ec2.UserData.for_linux(),
+                role=iam.Role(
+                    self,
+                    "LaunchTemplateRole",
+                    assumed_by=iam.ServicePrincipal("ec2.amazonaws.com"),
+                ),
+            ),
+        )
+        capacity_provider = ecs.AsgCapacityProvider(
+            self, "CapProvider", auto_scaling_group=asg
+        )
+        cluster.add_asg_capacity_provider(capacity_provider)
 
-        task_definition = ecs.Ec2TaskDefinition(self, "TaskDef")
+        task_definition = ecs.Ec2TaskDefinition(
+            self, "TaskDef", network_mode=ecs.NetworkMode.AWS_VPC
+        )
 
-        docker_image_asset = ecs.AssetImage(
-            directory="../../..",
-            file="Dockerfile",
+        docker_image_asset = ecr_assets.DockerImageAsset(
+            self,
+            "DockerImageAsset",
+            directory=".",
         )
 
         container = task_definition.add_container(
@@ -58,11 +88,11 @@ class ECSAPIStack(Stack):
             cpu=256,
         )
 
-        task_definition.add_container(container)
+        container.add_port_mappings(ecs.PortMapping(container_port=80))
 
         service = ecs.Ec2Service(
             self,
-            "ECSService",
+            "APIService",
             cluster=cluster,
             task_definition=task_definition,
             desired_count=1,
@@ -70,16 +100,19 @@ class ECSAPIStack(Stack):
         )
 
         load_balancer = elbv2.ApplicationLoadBalancer(
-            self, "ALB", vpc=vpc, internet_facing=True
+            self,
+            "ALB",
+            vpc=vpc,
+            internet_facing=True,
+            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
         )
 
         listener = load_balancer.add_listener("Listener", port=80, open=True)
 
         health_check = elbv2.HealthCheck(
-            self,
             path="/health",
-            interval=elbv2.Duration.seconds(30),
-            timeout=elbv2.Duration.seconds(5),
+            interval=Duration.seconds(30),
+            timeout=Duration.seconds(5),
         )
 
         listener.add_targets(
