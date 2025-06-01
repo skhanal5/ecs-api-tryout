@@ -3,9 +3,9 @@ import aws_cdk as cdk
 import stacks.service as service
 
 app = cdk.App()
-service.ECSAPIStack(
+service.APIStack(
     app,
-    "ECSAPIStack",
+    "APIStack",
     env=cdk.Environment(account=cdk.Aws.ACCOUNT_ID, region=cdk.Aws.REGION),
 )
 app.synth()

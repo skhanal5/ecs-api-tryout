@@ -5,16 +5,23 @@ from aws_cdk import (
     aws_iam as iam,
     aws_elasticloadbalancingv2 as elbv2,
     aws_autoscaling as autoscaling,
+    aws_logs as logs,
     Stack,
     Duration,
-    CfnOutput,
 )
 from constructs import Construct
 
 
-class ECSAPIStack(Stack):
+class APIStack(Stack):
     def __init__(self, scope: Construct, id: str, **kwargs) -> None:
         super().__init__(scope, id, **kwargs)
+
+        log_group = logs.LogGroup(
+            self,
+            "MyLogGroup",
+            log_group_name="/ecs/api-service",
+            retention=logs.RetentionDays.ONE_DAY,
+        )
 
         vpc = ec2.Vpc(
             self,
@@ -49,7 +56,7 @@ class ECSAPIStack(Stack):
         cluster = ecs.Cluster(self, "EcsCluster", vpc=vpc)
         asg = autoscaling.AutoScalingGroup(
             self,
-            "EcsAsg",
+            "AutoscalingGroup",
             vpc=vpc,
             launch_template=ec2.LaunchTemplate(
                 self,
@@ -67,7 +74,7 @@ class ECSAPIStack(Stack):
             ),
         )
         capacity_provider = ecs.AsgCapacityProvider(
-            self, "CapProvider", auto_scaling_group=asg
+            self, "AsgCapProvider", auto_scaling_group=asg
         )
         cluster.add_asg_capacity_provider(capacity_provider)
 
@@ -86,6 +93,7 @@ class ECSAPIStack(Stack):
             image=ecs.ContainerImage.from_docker_image_asset(docker_image_asset),
             memory_limit_mib=512,
             cpu=256,
+            logging=ecs.LogDriver.aws_logs(stream_prefix="ecs", log_group=log_group),
         )
 
         container.add_port_mappings(ecs.PortMapping(container_port=80))
@@ -118,5 +126,3 @@ class ECSAPIStack(Stack):
         listener.add_targets(
             "TargetGroup", port=80, targets=[service], health_check=health_check
         )
-
-        CfnOutput(self, "LoadBalancerDNS", value=load_balancer.load_balancer_dns_name)
