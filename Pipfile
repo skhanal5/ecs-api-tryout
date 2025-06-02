@@ -10,6 +10,8 @@ fastapi = {extras = ["standard"], version = "*"}
 ruff = "*"
 mypy = "*"
 pre-commit = "*"
+aws-cdk-lib = "*"
+constructs = "*"
 
 [requires]
 python_version = "3.12"
