@@ -4,9 +4,9 @@
 This repo is a basic starter template for a REST API built using the FastAPI framework. It contains the CDK stacks required to deploy this API onto ECS.
 
 ### Infra
-Run `cdk synth --app "python infra/app.py" to view the resulting CloudFormation template.
+Run `cdk synth --app "python infra/app.py"` to view the resulting CloudFormation template.
 
-Run `cdk deploy --app "python infra/app.py" to create the stack and provision its resources.
+Run `cdk deploy --app "python infra/app.py"` to create the stack and provision its resources.
 
 ## Local Development
 
